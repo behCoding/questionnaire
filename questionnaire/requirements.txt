@@ -1,0 +1,9 @@
+fastapi
+sqlalchemy
+alembic
+asyncpg
+psycopg2-binary
+uvicorn
+python-dotenv
+windows-curses
+pydantic-settings
