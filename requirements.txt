@@ -1,0 +1,16 @@
+fastapi==0.111.1
+sqlalchemy==2.0.31
+alembic==1.13.2
+asyncpg
+psycopg2-binary
+uvicorn
+python-dotenv==1.0.1
+windows-curses
+pydantic-settings
+databases
+passlib==1.7.4
+python-jose
+jose==1.0.0
+passlib
+pydantic==1.10.17
+bcrypt==4.2.0
