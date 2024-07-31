@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 import sys
 import os
+from fastapi.middleware.cors import CORSMiddleware
 
 # Must be added to add the module packs to the system path
 sys.path = ['', '..'] + sys.path[1:]
@@ -22,6 +23,20 @@ from questionnaire.backend.serialization import (UserCreate, UserResponse, Token
 import CRUD as crud
 
 app = FastAPI()
+
+origins = [
+    "http://localhost:3000",  # React frontend
+    "http://localhost:8000",  # Backend (optional)
+    # Add more origins if necessary
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Create the database tables
 Base.metadata.create_all(bind=engine)
@@ -52,7 +67,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer", "role": user.role}
 
 
 @app.get("/users/me", response_model=UserResponse)
