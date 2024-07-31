@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 
+
 class UserBase(BaseModel):
     username: str
     role: str
@@ -84,7 +85,7 @@ class CourseBase(BaseModel):
 
 
 class CourseCreate(CourseBase):
-    pass
+    id: int
 
 
 class CourseResponse(CourseBase):

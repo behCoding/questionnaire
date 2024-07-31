@@ -15,9 +15,10 @@ sys.path.append(BASE_DIR)
 from questionnaire.backend.database import engine, get_db
 from questionnaire.backend.models import Base, User, Form, Question
 from questionnaire.backend.auth import authenticate_user, create_access_token, get_password_hash, get_current_user, \
-    ACCESS_TOKEN_EXPIRE_MINUTES, get_current_active_user
+    ACCESS_TOKEN_EXPIRE_MINUTES, get_current_active_user, delete_user, update_user
 from questionnaire.backend.serialization import (UserCreate, UserResponse, Token, TokenData, FormResponse, FormCreate,
-                                                 QuestionResponse, QuestionCreate)
+                                                 QuestionResponse, QuestionCreate, CourseResponse, CourseCreate,
+                                                 UserUpdate)
 import CRUD as crud
 
 app = FastAPI()
@@ -62,6 +63,43 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
 @app.get("/protected-route")
 async def protected_route(current_user: User = Depends(get_current_user)):
     return {"msg": f"Hello, {current_user.username}"}
+
+
+@app.post("/courses", response_model=CourseResponse)
+def create_course(course: CourseCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return crud.create_course(db=db, course=course)
+
+@app.put("/courses/{course_id}", response_model=CourseResponse)
+def update_course(course_id: int, course: CourseCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return crud.update_course(db=db, course_id=course_id, course=course)
+
+@app.delete("/courses/{course_id}")
+def delete_course(course_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return crud.delete_course(db=db, course_id=course_id)
+
+@app.post("/users", response_model=UserResponse)
+def create_user(user: UserCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return crud.create_user(db=db, user=user)
+
+@app.put("/users/{user_id}", response_model=UserResponse)
+def update_user(user_id: int, user: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return update_user(db=db, user_id=user_id, user=user)
+
+@app.delete("/users/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return delete_user(db=db, user_id=user_id)
 
 
 @app.post("/courses/{course_id}/forms", response_model=FormResponse)

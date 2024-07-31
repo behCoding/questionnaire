@@ -8,7 +8,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from .database import get_db
 from .models import User
-from .serialization import TokenData
+from .serialization import TokenData, UserUpdate
 from .core.config import settings
 from .CRUD import get_user_by_username
 
@@ -77,3 +77,23 @@ def get_current_active_user(current_user: User = Depends(get_current_user)):
     if current_user.role != "active":
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
+
+
+def update_user(db: Session, user_id: int, user: UserUpdate):
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if db_user:
+        for var, value in vars(user).items():
+            if value and var == "password":
+                value = get_password_hash(value)
+                setattr(db_user, var, value)
+        db.commit()
+        db.refresh(db_user)
+    return db_user
+
+
+def delete_user(db: Session, user_id: int):
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if db_user:
+        db.delete(db_user)
+        db.commit()
+    return db_user
