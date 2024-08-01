@@ -1,18 +1,22 @@
 from sqlalchemy.orm import Session
 from questionnaire.backend.models import User, Form, Question, Course
-from questionnaire.backend.serialization import FormCreate, QuestionCreate, CourseCreate
+from questionnaire.backend.serialization import FormCreate, QuestionCreate, CourseCreate, CourseBase
 
 
 def get_user_by_username(db: Session, username: str):
     return db.query(User).filter(User.username == username).first()
 
 
-def create_course(db: Session, course: CourseCreate):
+def create_course(db: Session, course: CourseBase):
     db_course = Course(**course.dict())
     db.add(db_course)
     db.commit()
     db.refresh(db_course)
     return db_course
+
+
+def get_all_courses(db: Session):
+    return db.query(Course).all()
 
 
 def update_course(db: Session, course_id: int, course: CourseCreate):
