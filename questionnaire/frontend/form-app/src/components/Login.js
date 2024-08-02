@@ -20,8 +20,9 @@ const Login = () => {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
 
-      const { access_token, role } = response.data;
+      const { access_token, role, user_id} = response.data;
       localStorage.setItem('token', access_token);
+      localStorage.setItem('user_id', user_id);
       // Redirect based on role
       if (role === 'admin') {
         navigate('/admin-dashboard');

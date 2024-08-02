@@ -98,11 +98,21 @@ def delete_course(course_id: int, db: Session = Depends(get_db), current_user: U
         raise HTTPException(status_code=403, detail="Not authorized")
     return crud.delete_course(db=db, course_id=course_id)
 
+<<<<<<< Updated upstream
 @app.post("/users", response_model=UserResponse)
 def create_user(user: UserCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
     return crud.create_user(db=db, user=user)
+=======
+
+@app.get("/courses/all", response_model=List[CourseResponse])
+def courses_list(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    '''if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")'''
+    return crud.get_all_courses(db=db)
+
+>>>>>>> Stashed changes
 
 @app.put("/users/{user_id}", response_model=UserResponse)
 def update_user(user_id: int, user: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
@@ -117,6 +127,25 @@ def delete_user(user_id: int, db: Session = Depends(get_db), current_user: User 
     return delete_user(db=db, user_id=user_id)
 
 
+<<<<<<< Updated upstream
+=======
+# Get the courses for a specific teacher
+@app.get("/teachers/{teacher_id}/courses", response_model=List[CourseResponse])
+def get_teacher_courses(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.role != "teacher":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return crud.get_courses_for_teacher(db=db, teacher_id=current_user.id)
+
+
+# Add a course to a teacher
+@app.post("/teachers/{teacher_id}/courses/{course_id}", response_model=CourseResponse)
+def add_course_to_teacher(course_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.role != "teacher":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return crud.add_course_to_teacher(db=db, teacher_id=current_user.id, course_id=course_id)
+
+
+>>>>>>> Stashed changes
 @app.post("/courses/{course_id}/forms", response_model=FormResponse)
 def create_form(course_id: int, form: FormCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
     if current_user.role != "teacher":

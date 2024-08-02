@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const FormManagement = ({ courseId }) => {
   const [forms, setForms] = useState([]);
-  const [formName, setFormName] = useState('');
+  const [formTitle, setFormTitle] = useState('');
 
   useEffect(() => {
     // Fetch forms for a specific course
@@ -13,10 +13,10 @@ const FormManagement = ({ courseId }) => {
   }, [courseId]);
 
   const handleAddForm = () => {
-    axios.post(`http://localhost:8000/courses/${courseId}/forms`, { name: formName }, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+    axios.post(`http://localhost:8000/courses/${courseId}/forms`, { title: formTitle }, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
       .then(response => {
         setForms([...forms, response.data]);
-        setFormName('');
+        setFormTitle('');
       })
       .catch(error => console.error('Error adding form:', error));
   };
@@ -26,14 +26,14 @@ const FormManagement = ({ courseId }) => {
       <h2>Form Management</h2>
       <input 
         type="text" 
-        value={formName} 
-        onChange={(e) => setFormName(e.target.value)} 
-        placeholder="Form Name" 
+        value={formTitle} 
+        onChange={(e) => setFormTitle(e.target.value)} 
+        placeholder="Form Title" 
       />
       <button onClick={handleAddForm}>Add Form</button>
       <ul>
         {forms.map(form => (
-          <li key={form.id}>{form.name}</li>
+          <li key={form.id}>{form.title}</li>
         ))}
       </ul>
     </div>

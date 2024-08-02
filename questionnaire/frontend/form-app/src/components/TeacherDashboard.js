@@ -1,49 +1,82 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import FormManagement from './FormManagement';
 
 const TeacherDashboard = () => {
-  const [forms, setForms] = useState([]);
-  const [newForm, setNewForm] = useState({ name: '' });
+  const [allCourses, setAllCourses] = useState([]);
+  const [teacherCourses, setTeacherCourses] = useState([]);
+  const [selectedCourse, setSelectedCourse] = useState('');
+  const [showForms, setShowForms] = useState(null); // Track which course's forms to show
+
+  // Retrieve user from localStorage and parse it
+  const teacherId = localStorage.getItem('user_id');
 
   useEffect(() => {
-    axios.get('http://localhost:8000/forms', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
-      .then(response => setForms(response.data))
-      .catch(error => console.error('Error fetching forms:', error));
-  }, []);
+    if (!teacherId) {
+      console.error("User is not logged in or user information is missing.");
+      return;
+    }
 
-  const handleAddForm = () => {
-    axios.post('http://localhost:8000/forms', newForm, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+    // Fetch all courses
+    axios.get('http://localhost:8000/courses/all', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+      .then(response => setAllCourses(response.data))
+      .catch(error => console.error('Error fetching all courses:', error));
+
+    // Fetch teacher's courses
+    axios.get(`http://localhost:8000/teachers/${teacherId}/courses`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+      .then(response => setTeacherCourses(response.data))
+      .catch(error => console.error('Error fetching teacher courses:', error));
+  }, [teacherId]);
+
+  const handleAddCourse = () => {
+    if (!selectedCourse) {
+      console.error("No course selected.");
+      return;
+    }
+
+    axios.post(`http://localhost:8000/teachers/${teacherId}/courses/${selectedCourse}`, {}, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
       .then(response => {
-        setForms([...forms, response.data]);
-        setNewForm({ name: '' });
+        setTeacherCourses([...teacherCourses, response.data]);
+        setSelectedCourse('');
       })
-      .catch(error => console.error('Error adding form:', error));
+      .catch(error => console.error('Error adding course to teacher:', error));
   };
 
-  const handleDeleteForm = (formId) => {
-    axios.delete(`http://localhost:8000/forms/${formId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
-      .then(() => setForms(forms.filter(form => form.id !== formId)))
-      .catch(error => console.error('Error deleting form:', error));
-  };
+  if (!teacherId) {
+    return <div>Please log in to view your dashboard.</div>;
+  }
 
   return (
     <div>
       <h2>Teacher Dashboard</h2>
-      <input 
-        type="text" 
-        placeholder="Form Name" 
-        value={newForm.name} 
-        onChange={(e) => setNewForm({ ...newForm, name: e.target.value })} 
-      />
-      <button onClick={handleAddForm}>Add Form</button>
-      <ul>
-        {forms.map(form => (
-          <li key={form.id}>
-            {form.name}
-            <button onClick={() => handleDeleteForm(form.id)}>Delete</button>
-          </li>
-        ))}
-      </ul>
+      <div>
+        <h3>All Courses</h3>
+        <select value={selectedCourse} onChange={(e) => setSelectedCourse(e.target.value)}>
+          <option value="">Select a course</option>
+          {allCourses.map(course => (
+            <option key={course.id} value={course.id}>{course.name}</option>
+          ))}
+        </select>
+        <button onClick={handleAddCourse}>Add Course</button>
+      </div>
+      <div>
+        <h3>My Courses</h3>
+        <ul>
+          {teacherCourses.map(course => (
+            <li key={course.id}>
+              {course.name}
+              <button onClick={() => setShowForms(course.id)}>Manage Forms</button>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {showForms && <FormManagement courseId={showForms} />}
     </div>
   );
 };
