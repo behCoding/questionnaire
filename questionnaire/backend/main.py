@@ -68,7 +68,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer", "role": user.role}
+    return {"access_token": access_token, "token_type": "bearer", "role": user.role, "user_id": user.id}
 
 
 @app.get("/users/me", response_model=UserResponse)
@@ -89,10 +89,10 @@ def create_course(course: CourseBase, db: Session = Depends(get_db), current_use
 
 
 @app.put("/courses/{course_id}", response_model=CourseResponse)
-def update_course(course_id: int, course: CourseCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def update_course(course: CourseResponse, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
-    return crud.update_course(db=db, course_id=course_id, course=course)
+    return crud.update_course(db=db, course=course)
 
 
 @app.delete("/courses/{course_id}")
@@ -121,6 +121,22 @@ def delete_user(user_id: int, db: Session = Depends(get_db), current_user: User 
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
     return delete_user(db=db, user_id=user_id)
+
+
+# Get the courses for a specific teacher
+@app.get("/teachers/{teacher_id}/courses", response_model=List[CourseResponse])
+def get_teacher_courses(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.role != "teacher":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return crud.get_courses_for_teacher(db=db, teacher_id=current_user.id)
+
+
+# Add a course to a teacher
+@app.post("/teachers/{teacher_id}/courses/{course_id}", responsemodel=CourseResponse)
+def add_course_to_teacher(course_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.role != "teacher":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return crud.add_course_to_teacher(db=db, teacher_id=current_user.id, course_id=course_id)
 
 
 @app.post("/courses/{course_id}/forms", response_model=FormResponse)

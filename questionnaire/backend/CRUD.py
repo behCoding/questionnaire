@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from questionnaire.backend.models import User, Form, Question, Course
-from questionnaire.backend.serialization import FormCreate, QuestionCreate, CourseCreate, CourseBase
+from questionnaire.backend.serialization import FormCreate, QuestionCreate, CourseCreate, CourseBase, CourseResponse
 
 
 def get_user_by_username(db: Session, username: str):
@@ -19,8 +19,8 @@ def get_all_courses(db: Session):
     return db.query(Course).all()
 
 
-def update_course(db: Session, course_id: int, course: CourseCreate):
-    db_course = db.query(Course).filter(Course.id == course_id).first()
+def update_course(db: Session, course: CourseResponse):
+    db_course = db.query(Course).filter(Course.id == course.id).first()
     if db_course:
         for var, value in vars(course).items():
             setattr(db_course, var, value) if value else None
@@ -43,6 +43,17 @@ def create_form(db: Session, form: FormCreate, course_id: int, teacher_id: int):
     db.commit()
     db.refresh(db_form)
     return db_form
+
+
+def get_courses_for_teacher(db: Session, teacher_id: int):
+    return db.query(Course).join(Form).filter(Form.teacher_id == teacher_id).all()
+
+
+def add_course_to_teacher(db: Session, teacher_id: int, course_id: int):
+    teacher_course = Form(teacher_id=teacher_id, course_id=course_id)
+    db.add(teacher_course)
+    db.commit()
+    return db.query(Course).filter(Course.id == course_id).first()
 
 
 def create_question(db: Session, question: QuestionCreate, form_id: int):
