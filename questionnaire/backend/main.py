@@ -1,5 +1,5 @@
 from datetime import timedelta
-
+from typing import List
 import uvicorn
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -8,10 +8,10 @@ import sys
 import os
 from fastapi.middleware.cors import CORSMiddleware
 
-# Must be added to add the module packs to the system path
+"""# Must be added to add the module packs to the system path if you get import error
 sys.path = ['', '..'] + sys.path[1:]
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(BASE_DIR)
+sys.path.append(BASE_DIR) """
 
 from questionnaire.backend.database import engine, get_db
 from questionnaire.backend.models import Base, User, Form, Question
@@ -19,7 +19,7 @@ from questionnaire.backend.auth import authenticate_user, create_access_token, g
     ACCESS_TOKEN_EXPIRE_MINUTES, get_current_active_user, delete_user, update_user
 from questionnaire.backend.serialization import (UserCreate, UserResponse, Token, TokenData, FormResponse, FormCreate,
                                                  QuestionResponse, QuestionCreate, CourseResponse, CourseCreate,
-                                                 UserUpdate)
+                                                 UserUpdate, CourseBase)
 import CRUD as crud
 
 app = FastAPI()
@@ -54,6 +54,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user
 
+
 @app.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = authenticate_user(db, form_data.username, form_data.password)
@@ -67,7 +68,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer", "role": user.role}
+    return {"access_token": access_token, "token_type": "bearer", "role": user.role, "user_id": user.id}
 
 
 @app.get("/users/me", response_model=UserResponse)
@@ -81,44 +82,39 @@ async def protected_route(current_user: User = Depends(get_current_user)):
 
 
 @app.post("/courses", response_model=CourseResponse)
-def create_course(course: CourseCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+def create_course(course: CourseBase, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized")
+        raise HTTPException(status_code=403, detail="Not authorized, reach out to the administrator for this operation")
     return crud.create_course(db=db, course=course)
 
+
 @app.put("/courses/{course_id}", response_model=CourseResponse)
-def update_course(course_id: int, course: CourseCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+def update_course(course: CourseResponse, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
-    return crud.update_course(db=db, course_id=course_id, course=course)
+    return crud.update_course(db=db, course=course)
+
 
 @app.delete("/courses/{course_id}")
-def delete_course(course_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+def delete_course(course_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
     return crud.delete_course(db=db, course_id=course_id)
 
-<<<<<<< Updated upstream
-@app.post("/users", response_model=UserResponse)
-def create_user(user: UserCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized")
-    return crud.create_user(db=db, user=user)
-=======
 
 @app.get("/courses/all", response_model=List[CourseResponse])
 def courses_list(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    '''if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized")'''
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
     return crud.get_all_courses(db=db)
 
->>>>>>> Stashed changes
 
 @app.put("/users/{user_id}", response_model=UserResponse)
-def update_user(user_id: int, user: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+def update_user(user_id: int, user: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
     return update_user(db=db, user_id=user_id, user=user)
+
 
 @app.delete("/users/{user_id}")
 def delete_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
@@ -127,8 +123,6 @@ def delete_user(user_id: int, db: Session = Depends(get_db), current_user: User 
     return delete_user(db=db, user_id=user_id)
 
 
-<<<<<<< Updated upstream
-=======
 # Get the courses for a specific teacher
 @app.get("/teachers/{teacher_id}/courses", response_model=List[CourseResponse])
 def get_teacher_courses(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -138,23 +132,22 @@ def get_teacher_courses(db: Session = Depends(get_db), current_user: User = Depe
 
 
 # Add a course to a teacher
-@app.post("/teachers/{teacher_id}/courses/{course_id}", response_model=CourseResponse)
+@app.post("/teachers/{teacher_id}/courses/{course_id}", responsemodel=CourseResponse)
 def add_course_to_teacher(course_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role != "teacher":
         raise HTTPException(status_code=403, detail="Not authorized")
     return crud.add_course_to_teacher(db=db, teacher_id=current_user.id, course_id=course_id)
 
 
->>>>>>> Stashed changes
 @app.post("/courses/{course_id}/forms", response_model=FormResponse)
-def create_form(course_id: int, form: FormCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+def create_form(course_id: int, form: FormCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role != "teacher":
         raise HTTPException(status_code=403, detail="Not authorized")
     return crud.create_form(db=db, form=form, course_id=course_id, teacher_id=current_user.id)
 
 
 @app.put("/forms/{form_id}", response_model=FormResponse)
-def update_form(form_id: int, form: FormCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+def update_form(form_id: int, form: FormCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     db_form = db.query(Form).filter(Form.id == form_id).first()
     if db_form is None:
         raise HTTPException(status_code=404, detail="Form not found")
@@ -180,7 +173,7 @@ def delete_form(form_id: int, db: Session = Depends(get_db), current_user: User 
 
 
 @app.post("/forms/{form_id}/questions", response_model=QuestionResponse)
-def create_question(form_id: int, question: QuestionCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+def create_question(form_id: int, question: QuestionCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     db_form = db.query(Form).filter(Form.id == form_id).first()
     if db_form is None:
         raise HTTPException(status_code=404, detail="Form not found")
@@ -190,7 +183,7 @@ def create_question(form_id: int, question: QuestionCreate, db: Session = Depend
 
 
 @app.put("/questions/{question_id}", response_model=QuestionResponse)
-def update_question(question_id: int, question: QuestionCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+def update_question(question_id: int, question: QuestionCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     db_question = db.query(Question).filter(Question.id == question_id).first()
     if db_question is None:
         raise HTTPException(status_code=404, detail="Question not found")
@@ -205,7 +198,7 @@ def update_question(question_id: int, question: QuestionCreate, db: Session = De
 
 
 @app.delete("/questions/{question_id}")
-def delete_question(question_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+def delete_question(question_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     db_question = db.query(Question).filter(Question.id == question_id).first()
     if db_question is None:
         raise HTTPException(status_code=404, detail="Question not found")

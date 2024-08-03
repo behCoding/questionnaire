@@ -1,58 +1,88 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const UserManagement = () => {
-  const [users, setUsers] = useState([]);
-  const [newUser, setNewUser] = useState({ username: '', password: '', role: '' });
+const CourseManagement = () => {
+  const [courses, setCourses] = useState([]);
+  const [courseName, setCourseName] = useState('');
+  const [editingCourse, setEditingCourse] = useState(null);
 
   useEffect(() => {
-    axios.get('http://localhost:8000/users', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
-      .then(response => setUsers(response.data))
-      .catch(error => console.error('Error fetching users:', error));
+    // Fetch courses on component mount
+    axios.get('http://localhost:8000/courses', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+      .then(response => setCourses(response.data))
+      .catch(error => console.error('Error fetching courses:', error.response ? error.response.data : error.message));
   }, []);
 
-  const handleAddUser = () => {
-    axios.post('http://localhost:8000/users', newUser, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+  const handleAddCourse = () => {
+    if (courseName.trim() === '') return;
+
+    axios.post('http://localhost:8000/courses', { name: courseName }, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
       .then(response => {
-        setUsers([...users, response.data]);
-        setNewUser({ username: '', password: '', role: '' });
+        setCourses([...courses, response.data]);
+        setCourseName('');
       })
-      .catch(error => console.error('Error adding user:', error));
+      .catch(error => console.error('Error adding course:', error.response ? error.response.data : error.message));
   };
 
-  const handleDeleteUser = (userId) => {
-    axios.delete(`http://localhost:8000/users/${userId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
-      .then(() => setUsers(users.filter(user => user.id !== userId)))
-      .catch(error => console.error('Error deleting user:', error));
+  const handleUpdateCourse = (courseId) => {
+    if (courseName.trim() === '') return;
+
+    axios.put(`http://localhost:8000/courses/${courseId}`, { name: courseName }, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+      .then(response => {
+        const updatedCourses = courses.map(course => course.id === courseId ? response.data : course);
+        setCourses(updatedCourses);
+        setCourseName('');
+        setEditingCourse(null);
+      })
+      .catch(error => console.error('Error updating course:', error.response ? error.response.data : error.message));
+  };
+
+  const handleDeleteCourse = (courseId) => {
+    axios.delete(`http://localhost:8000/courses/${courseId}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+      .then(() => {
+        setCourses(courses.filter(course => course.id !== courseId));
+      })
+      .catch(error => console.error('Error deleting course:', error.response ? error.response.data : error.message));
+  };
+
+  const startEditingCourse = (course) => {
+    setCourseName(course.name);
+    setEditingCourse(course.id);
   };
 
   return (
     <div>
-      <h2>User Management</h2>
-      <input 
-        type="text" 
-        placeholder="Username" 
-        value={newUser.username} 
-        onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} 
-      />
-      <input 
-        type="password" 
-        placeholder="Password" 
-        value={newUser.password} 
-        onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} 
-      />
-      <input 
-        type="text" 
-        placeholder="Role" 
-        value={newUser.role} 
-        onChange={(e) => setNewUser({ ...newUser, role: e.target.value })} 
-      />
-      <button onClick={handleAddUser}>Add User</button>
+      <h2>Course Management</h2>
+      <div>
+        <input 
+          type="text" 
+          value={courseName} 
+          onChange={(e) => setCourseName(e.target.value)} 
+          placeholder="Course Name" 
+        />
+        <button onClick={editingCourse ? () => handleUpdateCourse(editingCourse) : handleAddCourse}>
+          {editingCourse ? 'Update Course' : 'Add Course'}
+        </button>
+        {editingCourse && (
+          <button onClick={() => { setCourseName(''); setEditingCourse(null); }}>
+            Cancel
+          </button>
+        )}
+      </div>
       <ul>
-        {users.map(user => (
-          <li key={user.id}>
-            {user.username} - {user.role}
-            <button onClick={() => handleDeleteUser(user.id)}>Delete</button>
+        {courses.map(course => (
+          <li key={course.id}>
+            {course.name}
+            <button onClick={() => startEditingCourse(course)}>Edit</button>
+            <button onClick={() => handleDeleteCourse(course.id)}>Delete</button>
           </li>
         ))}
       </ul>
@@ -60,4 +90,4 @@ const UserManagement = () => {
   );
 };
 
-export default UserManagement;
+export default CourseManagement;
