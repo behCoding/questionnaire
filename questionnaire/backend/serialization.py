@@ -13,7 +13,7 @@ class UserCreate(UserBase):
 
 class UserResponse(UserBase):
     id: int
-    course_id: int
+    course_id: list
 
     class Config:
         orm_mode = True
@@ -23,22 +23,18 @@ class Token(BaseModel):
     access_token: str
     token_type: str
     role: str
-    id: int
+    user_id: int
 
 
 class TokenData(BaseModel):
     username: str
 
 
-class FormBase(BaseModel):
-    title: str
-
-
-class FormCreate(FormBase):
+class FormCreate(BaseModel):
     pass
 
 
-class FormResponse(FormBase):
+class FormResponse(FormCreate):
     id: int
     course_id: int
     teacher_id: int

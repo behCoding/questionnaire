@@ -44,7 +44,6 @@ class Form(Base):
     id = Column(Integer, primary_key=True, index=True)
     course_id = Column(Integer, ForeignKey("courses.id"))
     teacher_id = Column(Integer, ForeignKey("users.id"))
-    title = Column(String, nullable=False)
 
     teacher = relationship("User")
     course = relationship("Course", back_populates="forms")

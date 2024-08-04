@@ -31,20 +31,20 @@ const CourseManagement = () => {
       .catch(error => console.error('Error adding course:', error.response ? error.response.data : error.message));
   };
 
-  const handleUpdateCourse = (courseId) => {
-    if (courseName.trim() === '') return;
+    const handleUpdateCourse = (courseId) => {
+        if (courseName.trim() === '') return;
 
-    axios.put(`http://localhost:8000/courses/${courseId}`, { name: courseName }, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    })
-      .then(response => {
-        const updatedCourses = courses.map(course => course.id === courseId ? response.data : course);
-        setCourses(updatedCourses);
-        setCourseName('');
-        setEditingCourse(null);
-      })
-      .catch(error => console.error('Error updating course:', error.response ? error.response.data : error.message));
-  };
+        axios.put(`http://localhost:8000/courses/${courseId}`, { id: courseId, name: courseName }, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        })
+            .then(response => {
+                const updatedCourses = courses.map(course => course.id === courseId ? response.data : course);
+                setCourses(updatedCourses);
+                setCourseName('');
+                setEditingCourse(null);
+            })
+            .catch(error => console.error('Error updating course:', error.response ? error.response.data : error.message));
+    };
 
   const handleDeleteCourse = (courseId) => {
     axios.delete(`http://localhost:8000/courses/${courseId}`, {

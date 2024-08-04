@@ -4,11 +4,11 @@ import uvicorn
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
-import sys
-import os
 from fastapi.middleware.cors import CORSMiddleware
 
 """# Must be added to add the module packs to the system path if you get import error
+import sys
+import os
 sys.path = ['', '..'] + sys.path[1:]
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_DIR) """
@@ -27,8 +27,7 @@ app = FastAPI()
 origins = [
     "http://localhost:3000",  # React frontend
     "http://localhost:8000",  # Backend (optional)
-    # Add more origins if necessary
-]
+    ]
 
 app.add_middleware(
     CORSMiddleware,
@@ -48,7 +47,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     if db_user:
         raise HTTPException(status_code=400, detail="A user with this username is already registered in the system")
     hashed_password = get_password_hash(user.password)
-    new_user = User(username=user.username, password=hashed_password, role=user.role)  # Default role is student
+    new_user = User(username=user.username, password=hashed_password, role=user.role)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -103,9 +102,7 @@ def delete_course(course_id: int, db: Session = Depends(get_db), current_user: U
 
 
 @app.get("/courses/all", response_model=List[CourseResponse])
-def courses_list(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized")
+def courses_list(db: Session = Depends(get_db)):
     return crud.get_all_courses(db=db)
 
 
@@ -132,7 +129,7 @@ def get_teacher_courses(db: Session = Depends(get_db), current_user: User = Depe
 
 
 # Add a course to a teacher
-@app.post("/teachers/{teacher_id}/courses/{course_id}", responsemodel=CourseResponse)
+@app.post("/teachers/{teacher_id}/courses/{course_id}", response_model=CourseResponse)
 def add_course_to_teacher(course_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role != "teacher":
         raise HTTPException(status_code=403, detail="Not authorized")
@@ -161,7 +158,7 @@ def update_form(form_id: int, form: FormCreate, db: Session = Depends(get_db), c
 
 
 @app.delete("/forms/{form_id}")
-def delete_form(form_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+def delete_form(form_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     db_form = db.query(Form).filter(Form.id == form_id).first()
     if db_form is None:
         raise HTTPException(status_code=404, detail="Form not found")
